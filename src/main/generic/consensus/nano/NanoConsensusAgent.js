@@ -152,28 +152,8 @@ class NanoConsensusAgent extends BaseConsensusAgent {
         this._orphanedBlocks = [];
     }
 
-    /**
-     * @param {Array.<InvVector>} vectors
-     * @returns {void}
-     * @protected
-     * @override
-     */
-    _doRequestData(vectors) {
-        /** @type {Array.<InvVector>} */
-        const blocks = [];
-        /** @type {Array.<InvVector>} */
-        const transactions = [];
-        for (const vector of vectors) {
-            if (vector.type === InvVector.Type.BLOCK) {
-                blocks.push(vector);
-            } else {
-                transactions.push(vector);
-            }
-        }
-
-        // Request headers and transactions from peer.
-        this._peer.channel.getHeader(blocks);
-        this._peer.channel.getData(transactions);
+    _willRequestHeaders() {
+        return true;
     }
 
     /**

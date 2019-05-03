@@ -12,6 +12,85 @@ class FullConsensus extends BaseConsensus {
         this._mempool = mempool;
     }
 
+    // 
+    // Public consensus interface
+    //
+
+    /**
+     * @param {Hash} hash
+     * @param {boolean} [includeBody = true]
+     * @returns {Promise.<?Block>}
+     */
+    async getBlock(hash, includeBody = true) {
+        // Override to not fallback to network
+        return this._blockchain.getBlock(hash, true, includeBody);
+    }
+
+    /**
+     * @param {number} height
+     * @param {boolean} [includeBody = true]
+     * @returns {Promise.<?Block>}
+     */
+    async getBlockAt(height, includeBody = true) {
+        // Override to not fallback to network
+        return this._blockchain.getBlockAt(height, includeBody);
+    }
+
+    /**
+     * @param {Array.<Address>} addresses
+     * @returns {Promise.<Array.<Account>>}
+     */
+    async getAccounts(addresses) {
+        return Promise.all(addresses.map(addr => this._blockchain.accounts.get(addr)));
+    }
+
+    /**
+     * @param {Array.<Hash>} hashes
+     * @returns {Promise.<Array.<Transaction>>}
+     */
+    async getPendingTransactions(hashes) {
+        return /** @type {Array.<Transaction>} */ hashes.map(hash => this._mempool.getTransaction(hash)).filter(tx => tx != null);
+    }
+
+    /**
+     * @param {Address} address
+     * @returns {Promise.<Array.<Transaction>>}
+     */
+    async getPendingTransactionsByAddress(address) {
+        return this._mempool.getTransactionsByAddresses([address]);
+    }
+
+    /**
+     * @param {Array.<Hash>} hashes
+     * @param {Hash} blockHash
+     * @param {number} [blockHeight]
+     * @returns {Promise.<Array.<Transaction>>}
+     */
+    async getTransactionsFromBlock(hashes, blockHash, blockHeight) {
+        // Override to not fallback to network
+        let block = await this._blockchain.getBlock(blockHash, false, true);
+        return block.transactions.filter(tx => hashes.find(hash => hash.equals(tx.hash())));
+    }
+
+    /**
+     * @param {Array.<Hash>} hashes
+     * @returns {Promise.<Array.<?TransactionReceipt>>}
+     */
+    async getTransactionReceiptsByHashes(hashes) {
+        return this._blockchain.getTransactionReceiptsByHashes(hashes);
+    }
+
+    /**
+     * @param {Transaction} tx
+     * @returns {Promise.<void>} TODO
+     */
+    async sendTransaction(tx) {
+        await this._mempool.pushTransaction(tx);
+    }
+
+    //
+    //
+
     /**
      * @param {number} minFeePerByte
      */
@@ -46,4 +125,5 @@ class FullConsensus extends BaseConsensus {
         return this._mempool;
     }
 }
+
 Class.register(FullConsensus);

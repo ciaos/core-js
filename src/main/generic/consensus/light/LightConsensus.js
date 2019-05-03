@@ -8,9 +8,50 @@ class LightConsensus extends BaseConsensus {
         super(blockchain, mempool, network);
         /** @type {LightChain} */
         this._blockchain = blockchain;
+        this.bubble(this._blockchain, 'block');
         /** @type {Mempool} */
         this._mempool = mempool;
     }
+
+    // 
+    // Public consensus interface
+    //
+
+    /**
+     * @param {Array.<Address>} addresses
+     * @returns {Promise.<Array.<Account>>}
+     */
+    async getAccounts(addresses) {
+        return Promise.all(addresses.map(addr => this._blockchain.accounts.get(addr)));
+    }
+
+    /**
+     * @param {Array.<Hash>} hashes
+     * @returns {Promise.<Array.<Transaction>>}
+     */
+    async getPendingTransactions(hashes) {
+        return /** @type {Array.<Transaction>} */ hashes.map(hash => this._mempool.getTransaction(hash)).filter(tx => tx != null);
+    }
+
+    /**
+     * @param {Address} address
+     * @returns {Promise.<Array.<Transaction>>}
+     */
+    async getPendingTransactionsByAddress(address) {
+        return this._mempool.getTransactionsByAddresses([address]);
+    }
+
+    /**
+     * @param {Transaction} tx
+     * @returns {Promise.<void>} TODO
+     */
+    async sendTransaction(tx) {
+        await this._mempool.pushTransaction(tx);
+        // TODO: return value
+    }
+
+    //
+    //
 
     /**
      * @param {number} minFeePerByte

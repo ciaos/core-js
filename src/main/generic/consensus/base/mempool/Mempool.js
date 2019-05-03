@@ -30,7 +30,10 @@ class Mempool extends Observable {
                 this._evictTransactions().catch(Log.e.tag(Mempool));
             }
         });
-        blockchain.on('rebranched', (revertBlocks) => this._restoreTransactions(revertBlocks));
+        blockchain.on('rebranched', async (revertBlocks) => {
+            await this._evictTransactions();
+            await this._restoreTransactions(revertBlocks);
+        });
     }
 
     /**
@@ -169,6 +172,7 @@ class Mempool extends Observable {
         /** @type {MempoolTransactionSet} */
         const set = this._transactionSetBySender.get(transaction.sender);
         set.remove(transaction);
+        if (set.length === 0) this._transactionSetBySender.remove(transaction.sender);
 
         /** @type {HashSet.<Hash>} */
         const byRecipient = this._transactionSetByRecipient.get(transaction.recipient);

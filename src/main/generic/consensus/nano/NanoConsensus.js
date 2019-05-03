@@ -79,8 +79,8 @@ class NanoConsensus extends BaseConsensus {
 
         // Update mempool.
         try {
-            const includedTransactions = await this._requestTransactionsProof(this._subscription.addresses, head);
-            this._mempool.changeHead(head, includedTransactions);
+            const includedTransactions = await this._requestTransactionsByAddress(this._subscription.addresses, head);
+            await this._mempool.changeHead(head, includedTransactions);
         } catch (e) {
             Log.e(NanoConsensus, `Failed to retrieve transaction proof to update mempool: ${e.message || e}`);
         }
@@ -96,15 +96,6 @@ class NanoConsensus extends BaseConsensus {
      */
     _onTransactionAdded(tx) {
         // Don't relay transactions added to the mempool.
-    }
-
-    /**
-     * @param {Address} address
-     * @param {Hash} [blockHash]
-     * @returns {Promise.<?Account>}
-     */
-    async getAccount(address, blockHash = null) {
-        return (await this.getAccounts([address], blockHash))[0];
     }
 
     /**
@@ -134,6 +125,43 @@ class NanoConsensus extends BaseConsensus {
 
         // No peer supplied the requested account, fail.
         throw new Error(`Failed to retrieve accounts ${addresses}`);
+    }
+
+    /**
+     * @param {Transaction} tx
+     * @returns {Promise.<void>} TODO
+     */
+    async sendTransaction(tx) {
+        await this.relayTransaction(tx);
+        // TODO: return value
+    }
+
+    /**
+     * @param {Array.<Hash>} hashes
+     * @returns {Promise.<Array.<Transaction>>}
+     */
+    async getPendingTransactions(hashes) {
+        const txs = new HashSet();
+        for (let hash of hashes) {
+            const tx = this._mempool.getTransaction(hash);
+            txs.add(tx);
+        }
+        if (txs.length !== hashes.length) {
+            txs.addAll(await this._requestPendingTransactions(hashes.filter(h => !txs.get(h))));
+        }
+        return /** @type {Array.<Transaction>} */ hashes.map(h => txs.get(h)).filter(tx => !!tx);
+    }
+
+    /**
+     * @param {Address} address
+     * @returns {Promise.<Array.<Transaction>>}
+     */
+    async getPendingTransactionsByAddress(address) {
+        if (this._subscription.addresses && this._subscription.addresses.find(a => a.equals(address))) {
+            return this._mempool.getTransactionsByAddresses([address]);
+        } else {
+            throw new Error('Can not provide pending transactions without prior subscription');
+        }
     }
 
     /**

@@ -702,6 +702,7 @@ class JsonRpcServer {
             obj.recipient = account.recipient.toHex();
             obj.recipientAddress = account.recipient.toUserFriendlyAddress();
             obj.hashRoot = account.hashRoot.toHex();
+            obj.hashAlgorithm = account.hashRoot.algorithm
             obj.hashCount = account.hashCount;
             obj.timeout = account.timeout;
             obj.totalAmount = account.totalAmount;
@@ -754,6 +755,7 @@ class JsonRpcServer {
             extraData: Nimiq.BufferUtils.toHex(block.body.extraData),
             size: block.serializedSize,
             timestamp: block.timestamp,
+            confirmations: this._blockchain.height - block.height,
             transactions: includeTransactions
                 ? block.transactions.map((tx, i) => this._transactionToObj(tx, block, i))
                 : block.transactions.map((tx) => tx.hash().toHex())
